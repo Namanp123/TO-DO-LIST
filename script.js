@@ -1,188 +1,68 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
+const ACCOUNTS_KEY = "daymark.accounts.v2";
+const SESSION_KEY = "daymark.session.v2";
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const keyOf = (date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+const todayKey = keyOf(today);
+let accounts = readAccounts(), user = null, authMode = "login";
+let month = new Date(today.getFullYear(), today.getMonth(), 1), selectedDate = todayKey;
+let timer = null, timerMode = "work", timerSeconds = 25 * 60, workMinutes = 25, breakMinutes = 5, notified = new Set();
+let toastTimeout;
 
-:root {
-  --accent: #698b61;
-  --accent-dark: #46643f;
-  --tint: #e9f0e5;
-  --paper: #f5f6f2;
-  --surface: #fff;
-  --ink: #242b25;
-  --muted: #7c857c;
-  --line: #e8ebe5;
-  --shadow: 0 8px 28px #23341a0b;
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--paper); color: var(--ink); font: 14px "DM Sans", sans-serif; }
-button, input, select { font: inherit; }
-button { cursor: pointer; }
-.hidden { display: none !important; }
-a { color: inherit; text-decoration: none; }
-.auth-screen { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at top right, var(--tint), transparent 38%), var(--paper); }
-.auth-card { width: min(100%, 420px); background: white; border: 1px solid var(--line); border-radius: 20px; padding: 36px; box-shadow: var(--shadow); }
-.brand { display: inline-flex; gap: 10px; align-items: center; font: 800 20px Manrope, sans-serif; }
-.brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--accent); color: white; }
-.auth-card .eyebrow { margin-top: 34px; }
-.eyebrow { margin: 0 0 8px; color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: 1.4px; }
-h1, h2, p { margin-top: 0; }
-.auth-card h1, .page-heading h1 { margin-bottom: 8px; font: 800 29px Manrope, sans-serif; letter-spacing: -.7px; }
-.muted { color: var(--muted); }
-.auth-card .muted { font-size: 13px; margin-bottom: 25px; }
-form label { display: block; font-size: 12px; font-weight: 700; margin: 16px 0 7px; }
-form input, #displayName, select { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); outline: none; }
-form input:focus, #displayName:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--tint); }
-.button { border: 0; border-radius: 9px; padding: 10px 14px; font-weight: 700; }
-.primary { background: var(--accent); color: white; }
-.primary:hover { background: var(--accent-dark); }
-.secondary { background: #f0f2ed; color: #5f685d; }
-.full { width: 100%; }
-#authSubmit { margin-top: 22px; padding: 12px; }
-.form-error { min-height: 18px; color: #b74d46; font-size: 12px; margin: 10px 0 0; }
-.auth-switch { margin: 18px 0 0; text-align: center; color: var(--muted); font-size: 12px; }
-.text-button { border: 0; padding: 4px; background: transparent; color: var(--accent-dark); font-weight: 700; }
-.app { min-height: 100vh; display: grid; grid-template-columns: 230px 1fr; }
-.sidebar { position: sticky; top: 0; height: 100vh; padding: 25px 16px 16px; background: white; border-right: 1px solid var(--line); display: flex; flex-direction: column; }
-.sidebar .brand { padding: 0 10px 34px; }
-.nav-heading { padding: 0 12px; color: #a1a79e; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; }
-.navigation { display: grid; gap: 5px; }
-.nav-link { display: flex; gap: 12px; align-items: center; border: 0; border-radius: 9px; padding: 11px 12px; background: transparent; color: #778077; text-align: left; font-weight: 600; }
-.nav-link span { width: 19px; font-size: 17px; text-align: center; }
-.nav-link:hover, .nav-link.active { background: var(--tint); color: var(--accent-dark); }
-.sidebar-bottom { margin-top: auto; }
-.sidebar-note { padding: 15px; margin-bottom: 16px; border-radius: 13px; background: #f4f6f1; }
-.sidebar-note strong { font: 700 12px Manrope, sans-serif; }
-.sidebar-note p { margin: 8px 0 12px; color: var(--muted); font-size: 11px; line-height: 1.5; }
-.sidebar-note .button { font-size: 10px; padding: 9px; }
-.account-row { display: flex; align-items: center; gap: 9px; padding: 14px 3px 0; border-top: 1px solid var(--line); }
-.avatar { width: 34px; height: 34px; display: grid; place-items: center; flex: none; border-radius: 50%; background: var(--tint); color: var(--accent-dark); font-weight: 700; }
-.account-info { flex: 1; min-width: 0; }
-.account-info strong, .account-info small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.account-info strong { font-size: 11px; }
-.account-info small { margin-top: 3px; color: var(--muted); font-size: 10px; }
-.icon-button { border: 0; background: transparent; color: var(--muted); font-size: 18px; }
-.main { min-width: 0; }
-.topbar { height: 70px; padding: 0 36px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: #ffffffa8; }
-.breadcrumb { color: var(--muted); font-size: 12px; }
-.date-pill { border: 1px solid var(--line); border-radius: 8px; padding: 8px 11px; background: white; color: #586157; font-size: 11px; }
-.content { max-width: 1200px; margin: 0 auto; padding: 32px 36px 55px; }
-.page { display: none; }
-.page.active { display: block; }
-.page-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; margin-bottom: 24px; }
-.page-heading h1 { margin-top: 4px; }
-.page-heading .muted { margin: 0; font-size: 13px; }
-.accent { color: var(--accent); }
-.card { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 13px; margin-bottom: 16px; }
-.stat { padding: 16px; }
-.stat span, .stat small { display: block; color: var(--muted); font-size: 11px; }
-.stat strong { display: block; margin: 12px 0 4px; font: 800 24px Manrope, sans-serif; }
-.stat small { font-size: 10px; }
-.dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(250px, 1fr); gap: 16px; }
-.panel { padding: 18px 19px; }
-.panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
-.panel-heading h2 { margin: 0; font: 700 14px Manrope, sans-serif; }
-.panel-heading > span { color: var(--muted); font-size: 10px; }
-.week-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; }
-.week-day { padding: 10px 3px; border: 1px solid #f0f1ed; border-radius: 9px; background: #fafbf8; text-align: center; }
-.week-day.today { border-color: var(--accent); background: var(--accent); color: white; }
-.week-day small, .week-day strong { display: block; }
-.week-day small { color: var(--muted); font-size: 9px; }
-.week-day.today small { color: #e2ecde; }
-.week-day strong { margin: 5px 0; font: 700 14px Manrope, sans-serif; }
-.week-day em { color: var(--accent); font-size: 9px; font-style: normal; }
-.week-day.today em { color: #e2ecde; }
-.progress-label { display: flex; justify-content: space-between; margin: 20px 0 7px; color: var(--muted); font-size: 11px; }
-.progress-label strong { color: var(--ink); }
-.progress-track { height: 7px; overflow: hidden; border-radius: 8px; background: #edf0e9; }
-.progress-fill { width: 0; height: 100%; border-radius: inherit; background: var(--accent); transition: width .2s; }
-.task-heading { margin: 22px 0 5px; }
-.task-heading .text-button { font-size: 10px; }
-.task-list { display: grid; }
-.task-row { display: flex; align-items: center; gap: 10px; padding: 11px 2px; border-bottom: 1px solid #f0f1ed; }
-.task-row:last-child { border-bottom: 0; }
-.task-check { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
-.task-name { flex: 1; font-size: 12px; }
-.task-row.done .task-name { color: #a2a89f; text-decoration: line-through; }
-.tag { padding: 4px 7px; border-radius: 20px; background: #f3f1e8; color: #8c7750; font-size: 9px; }
-.tag.health { background: #edf4eb; color: var(--accent-dark); }
-.empty { padding: 18px 5px; color: var(--muted); text-align: center; font-size: 12px; }
-.right-column { display: grid; gap: 14px; align-content: start; }
-.chart { height: 130px; display: flex; align-items: end; gap: 9px; padding-top: 10px; }
-.chart-column { height: 100%; flex: 1; display: flex; flex-direction: column; justify-content: end; align-items: center; gap: 5px; }
-.chart-bar { width: min(23px, 70%); min-height: 5px; border-radius: 5px 5px 1px 1px; background: #dfe9da; }
-.chart-bar.current { background: var(--accent); }
-.chart-column small { color: var(--muted); font-size: 9px; }
-.reminder { padding: 14px; border-radius: 10px; background: #f1f4ee; color: #697268; font-size: 11px; line-height: 1.6; }
-.reminder strong { color: var(--accent-dark); }
-.button-row { display: flex; gap: 8px; }
-.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; }
-.calendar-label { padding: 7px; color: var(--muted); text-align: center; font-size: 10px; }
-.calendar-day { min-height: 75px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: white; text-align: left; }
-.calendar-day.muted-day { opacity: .4; }
-.calendar-day.today { background: var(--tint); }
-.calendar-day.selected { outline: 2px solid var(--accent); }
-.calendar-day > span { font: 700 11px Manrope, sans-serif; }
-.calendar-event { display: block; margin-top: 6px; overflow: hidden; padding: 3px 5px; border-radius: 4px; background: var(--tint); color: var(--accent-dark); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-.calendar-agenda { margin-top: 15px; }
-.timer-card { max-width: 600px; margin: 28px auto; padding: 35px 20px; text-align: center; }
-.timer-modes { display: flex; justify-content: center; flex-wrap: wrap; gap: 7px; }
-.mode { border: 0; border-radius: 8px; padding: 9px 12px; background: #f0f2ed; color: #727a70; font-size: 11px; font-weight: 600; }
-.mode.active { background: var(--tint); color: var(--accent-dark); }
-.timer-display { margin: 23px 0 0; font: 800 clamp(56px, 10vw, 82px) Manrope, sans-serif; letter-spacing: -3px; }
-.timer-card > .muted { font-size: 12px; }
-.center { justify-content: center; margin-top: 20px; }
-.center .button { min-width: 100px; }
-.timer-tip { margin: 26px 0 0; color: var(--muted); font-size: 11px; }
-.setting-row { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 17px 0; border-bottom: 1px solid var(--line); }
-.setting-row:last-child { border-bottom: 0; }
-.setting-row strong, .setting-row small { display: block; }
-.setting-row strong { font-size: 12px; }
-.setting-row small { margin-top: 4px; color: var(--muted); font-size: 10px; }
-.setting-row select, .setting-row input { width: auto; min-width: 145px; }
-.swatches { display: flex; gap: 9px; }
-.swatch { width: 24px; height: 24px; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 1px #ddd; }
-.toast { position: fixed; bottom: 22px; left: 50%; z-index: 10; transform: translate(-50%, 12px); opacity: 0; padding: 11px 15px; border-radius: 9px; background: #263126; color: white; font-size: 12px; transition: .2s; pointer-events: none; }
-.toast.show { transform: translate(-50%, 0); opacity: 1; }
+function readAccounts(){try{return JSON.parse(localStorage.getItem(ACCOUNTS_KEY)||"{}")}catch{return {}}}
+function save(){localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(accounts))}
+function initializeUser(account){account.data ||= {};const d=account.data;d.tasks ||= {};d.focus ||= {};d.settings ||= {name:account.username,theme:"light",work:25,rest:5};d.points ||= 0;d.bestStreak ||= 0;}
+function data(){return user.data}
+function esc(text){return String(text).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function taskListFor(date=todayKey){data().tasks[date] ||= [];return data().tasks[date]}
+function persist(){save()}
+function toast(message){const el=$("#toast");el.textContent=message;el.classList.add("show");clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>el.classList.remove("show"),2200)}
 
-@media (max-width: 900px) {
-  .app { grid-template-columns: 72px 1fr; }
-  .sidebar { padding-inline: 9px; }
-  .sidebar .brand { padding-inline: 9px; }
-  .sidebar .brand:not(.brand-mark) { font-size: 0; }
-  .sidebar .brand-mark { font-size: 17px; }
-  .nav-heading, .nav-link:not(.active) { }
-  .nav-link { justify-content: center; padding-inline: 5px; font-size: 0; }
-  .nav-link span { font-size: 17px; }
-  .sidebar-note, .account-info { display: none; }
-  .account-row { justify-content: center; }
-  .dashboard-grid { grid-template-columns: 1fr; }
-  .right-column { grid-template-columns: repeat(2, 1fr); }
-  .right-column .reminder { grid-column: 1 / -1; }
-}
-@media (max-width: 620px) {
-  .app { display: block; padding-bottom: 64px; }
-  .sidebar { position: fixed; inset: auto 0 0; z-index: 5; height: 62px; padding: 5px 8px; border: 0; border-top: 1px solid var(--line); }
-  .sidebar .brand, .sidebar .nav-heading, .sidebar-bottom { display: none; }
-  .navigation { grid-template-columns: repeat(4, 1fr); }
-  .nav-link { display: grid; justify-items: center; gap: 0; padding: 4px 2px; font-size: 9px; }
-  .nav-link span { font-size: 17px; }
-  .topbar { height: 58px; padding: 0 15px; }
-  .content { padding: 22px 14px 30px; }
-  .page-heading { align-items: flex-start; }
-  .page-heading h1 { font-size: 24px; }
-  .page-heading .muted { max-width: 260px; font-size: 11px; line-height: 1.5; }
-  .page-heading > .button { padding: 9px; font-size: 10px; }
-  .stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .stat { padding: 12px; }
-  .stat strong { font-size: 21px; }
-  .panel { padding: 15px; }
-  .week-strip { gap: 4px; }
-  .week-day { padding: 8px 1px; }
-  .week-day small { font-size: 8px; }
-  .right-column { grid-template-columns: 1fr; }
-  .calendar-grid { gap: 4px; }
-  .calendar-day { min-height: 57px; padding: 5px; }
-  .calendar-event { font-size: 7px; }
-  .setting-row { align-items: flex-start; }
-  .setting-row select, .setting-row input { min-width: 125px; }
-  .auth-card { padding: 27px 22px; }
-}
+function setAuthMode(mode){authMode=mode;const register=mode==="register";$("#authTitle").textContent=register?"Create your space.":"Welcome back.";$("#authSubtitle").textContent=register?"Make an account to start planning.":"Sign in to continue with your day.";$("#authSubmit").textContent=register?"Create account":"Sign in";$("#authSwitchText").textContent=register?"Already have an account?":"New to Daymark?";$("#authSwitch").textContent=register?"Sign in":"Create an account";$("#authPassword").autocomplete=register?"new-password":"current-password";$("#authError").textContent=""}
+$("#authSwitch").onclick=()=>setAuthMode(authMode==="login"?"register":"login");
+$("#authForm").onsubmit=(event)=>{event.preventDefault();const username=$("#authUsername").value.trim().toLowerCase(),password=$("#authPassword").value;$("#authError").textContent="";if(authMode==="register"){if(accounts[username]){$("#authError").textContent="That username is already taken.";return}accounts[username]={username,password,data:{}};initializeUser(accounts[username]);save()}else if(!accounts[username]||accounts[username].password!==password){$("#authError").textContent="Username or password is incorrect.";return}localStorage.setItem(SESSION_KEY,username);openApp(username)};
+function openApp(username){user=accounts[username];if(!user)return;initializeUser(user);$("#authScreen").classList.add("hidden");$("#app").classList.remove("hidden");const s=data().settings;workMinutes=Number(s.work)||25;breakMinutes=Number(s.rest)||5;$("#workMinutes").value=workMinutes;$("#breakMinutes").value=breakMinutes;$("#displayName").value=s.name||username;$("#accountName").textContent=s.name||username;$("#avatar").textContent=(s.name||username)[0].toUpperCase();$("#accountDetails").textContent=`Signed in as ${username}`;$("#themeSelect").value=s.theme||"light";applyTheme();const h=new Date().getHours();$("#welcomeHeading").innerHTML=`${h<12?"Good morning":h<18?"Good afternoon":"Good evening"}, ${esc(s.name||username)}<span class="accent">.</span>`;$("#todayHeading").textContent=today.toLocaleDateString("en",{weekday:"long",month:"long",day:"numeric"});$("#datePill").textContent=today.toLocaleDateString("en",{month:"short",day:"numeric",year:"numeric"});renderAll();checkReminders()}
+function logout(){localStorage.removeItem(SESSION_KEY);user=null;clearInterval(timer);timer=null;$("#app").classList.add("hidden");$("#authScreen").classList.remove("hidden");$("#authForm").reset();setAuthMode("login")}
+$("#logoutButton").onclick=logout;$("#settingsLogout").onclick=logout;
+
+function goto(page){$$(".page").forEach(el=>el.classList.toggle("active",el.id===`page-${page}`));$$(".nav-link").forEach(el=>el.classList.toggle("active",el.dataset.page===page));$("#breadcrumb").textContent=`Workspace / ${({home:"Home",week:"Weekly tasks",calendar:"Calendar",focus:"Pomodoro",history:"History",settings:"Settings"})[page]}`;if(page==="calendar")renderCalendar();if(page==="week")renderWeek()}
+$$('.nav-link').forEach(button=>button.onclick=()=>goto(button.dataset.page));$$('[data-goto]').forEach(button=>button.onclick=()=>goto(button.dataset.goto));
+
+function weekDates(){const start=new Date(today);start.setDate(today.getDate()-today.getDay());return Array.from({length:7},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d})}
+function addTask(date=todayKey){const title=prompt("What task do you want to add?");if(!title||!title.trim())return;let deadline=prompt("Optional deadline time (for example 17:30). Leave blank for no reminder:")||"";if(deadline&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(deadline)){toast("Use 24-hour time such as 17:30; task added without a reminder.");deadline=""}taskListFor(date).push({id:crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random()}`,title:title.trim(),done:false,deadline,pointsAwarded:false});persist();renderAll();toast("Task added to your plan")}
+$("#addToday").onclick=()=>addTask(todayKey);$("#addWeekTask").onclick=()=>{const options=weekDates().map(d=>`${d.toLocaleDateString("en",{weekday:"long"})} (${keyOf(d)})`).join("\n");const choice=prompt(`Choose the day by entering its date (YYYY-MM-DD):\n${options}`,todayKey);if(choice&&weekDates().some(d=>keyOf(d)===choice))addTask(choice);else if(choice)toast("Choose a date in this week")};$("#addCalendarTask").onclick=$("#addSelectedDate").onclick=()=>addTask(selectedDate);
+
+function allTasks(){return Object.entries(data().tasks).flatMap(([date,tasks])=>tasks.map(task=>({...task,date})))}
+function completedOn(date){return (data().tasks[date]||[]).filter(t=>t.done).length}
+function setTaskState(task,date,done){task.done=done;if(done){task.completedAt=date;if(!task.pointsAwarded){data().points+=10;task.pointsAwarded=true}}else{task.completedAt=null}persist();renderAll()}
+function makeTaskRow(task,date){const row=document.createElement("div");row.className=`task-row${task.done?" done":""}`;const deadline=task.deadline?`<span class="task-meta">⏰ ${esc(task.deadline)}</span>`:"";row.innerHTML=`<input class="task-check" type="checkbox" ${task.done?"checked":""} aria-label="Mark task complete"><span class="task-name">${esc(task.title)}</span>${deadline}<button class="icon-button delete-task" aria-label="Delete task" title="Delete task">×</button>`;row.querySelector("input").onchange=e=>setTaskState(task,date,e.target.checked);row.querySelector(".delete-task").onclick=()=>{const list=data().tasks[date];list.splice(list.indexOf(task),1);persist();renderAll()};return row}
+function renderToday(){const tasks=taskListFor(),list=$("#todayList");list.innerHTML="";if(!tasks.length)list.innerHTML='<div class="empty">Nothing on your list yet. Add a task to get started.</div>';tasks.forEach(task=>list.append(makeTaskRow(task,todayKey)));const done=tasks.filter(t=>t.done).length,rate=tasks.length?Math.round(done/tasks.length*100):0;$("#todayCount").textContent=`${done} / ${tasks.length}`;$("#todayPercent").textContent=tasks.length?`${rate}% complete today`:"Start with one small step";$("#dailyProgressText").textContent=`${rate}%`;
+  $("#dailyProgress").style.width=`${rate}%`;const last7=weekDates(),focus=last7.reduce((sum,d)=>sum+(data().focus[keyOf(d)]||0),0);$("#focusCount").textContent=`${focus} min`;$("#pointsCount").textContent=data().points;const streak=calculateStreak();data().bestStreak=Math.max(data().bestStreak||0,streak);$("#streakCount").textContent=`${streak} ${streak===1?"day":"days"}`;$("#bestStreak").textContent=`Best: ${data().bestStreak} ${data().bestStreak===1?"day":"days"}`;persist();renderHomeChart();renderReminders()}
+$("#clearDone").onclick=()=>{data().tasks[todayKey]=taskListFor().filter(t=>!t.done);persist();renderAll();toast("Completed tasks cleared")};
+function renderHomeChart(){const dates=weekDates(),counts=dates.map(d=>completedOn(keyOf(d))),max=Math.max(3,...counts);$("#homeChart").innerHTML=dates.map((d,i)=>`<div class="chart-column"><small>${counts[i]||""}</small><div class="chart-bar ${keyOf(d)===todayKey?"current":""}" style="height:${Math.max(5,counts[i]/max*78)}%"></div><small>${d.toLocaleDateString("en",{weekday:"short"})}</small></div>`).join("");const done=counts.reduce((a,b)=>a+b,0),planned=dates.reduce((n,d)=>n+(data().tasks[keyOf(d)]||[]).length,0),pct=planned?Math.round(done/planned*100):0;$("#weekSummary").innerHTML=`<span>${done} completed of ${planned}</span><strong>${pct}% this week</strong>`}
+function renderWeek(){const dates=weekDates(),grid=$("#weekGrid");grid.innerHTML="";let total=0,done=0,points=0;dates.forEach(date=>{const key=keyOf(date),tasks=data().tasks[key]||[],complete=tasks.filter(t=>t.done).length,rate=tasks.length?Math.round(complete/tasks.length*100):0;total+=tasks.length;done+=complete;points+=tasks.filter(t=>t.done&&t.pointsAwarded).length*10;const card=document.createElement("article");card.className=`week-day-card${key===todayKey?" today":""}`;card.innerHTML=`<div class="week-day-head"><h2>${date.toLocaleDateString("en",{weekday:"long"})}</h2><span>${date.toLocaleDateString("en",{month:"short",day:"numeric"})}</span></div><div class="day-analysis"><b>${rate}%</b> complete · ${complete}/${tasks.length} tasks</div><div class="progress-track"><div class="progress-fill" style="width:${rate}%"></div></div><div class="task-list"></div><button class="day-add">＋ Add task</button>`;const taskBox=card.querySelector(".task-list");if(tasks.length)tasks.forEach(t=>taskBox.append(makeTaskRow(t,key)));else taskBox.innerHTML='<div class="empty">No tasks planned</div>';card.querySelector(".day-add").onclick=()=>addTask(key);grid.append(card)});$("#weekDone").textContent=`${done} / ${total}`;$("#weekPercent").textContent=`${total?Math.round(done/total*100):0}%`;$("#weekPoints").textContent=points}
+
+function renderCalendar(){if(!user)return;const year=month.getFullYear(),m=month.getMonth(),first=new Date(year,m,1),count=new Date(year,m+1,0).getDate(),offset=first.getDay(),grid=$("#calendarGrid");$("#monthTitle").textContent=month.toLocaleDateString("en",{month:"long",year:"numeric"});grid.innerHTML=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>`<div class="calendar-label">${d}</div>`).join("");for(let i=0;i<42;i++){const n=i-offset+1,date=new Date(year,m,n),key=keyOf(date),valid=n>0&&n<=count,cell=document.createElement("button");cell.className=`calendar-day${valid?"":" muted-day"}${key===todayKey?" today":""}${key===selectedDate?" selected":""}`;cell.innerHTML=`<span>${date.getDate()}</span>${(data().tasks[key]||[]).slice(0,2).map(t=>`<small class="calendar-event">${esc(t.title)}</small>`).join("")}`;cell.onclick=()=>{selectedDate=key;renderCalendar()};grid.append(cell)}const date=new Date(`${selectedDate}T00:00:00`);$("#selectedDateTitle").textContent=date.toLocaleDateString("en",{weekday:"long",month:"long",day:"numeric"});const agenda=$("#calendarAgenda"),tasks=data().tasks[selectedDate]||[];agenda.innerHTML="";if(!tasks.length)agenda.innerHTML='<div class="empty">No tasks for this date yet.</div>';tasks.forEach(t=>agenda.append(makeTaskRow(t,selectedDate)))}
+$("#prevMonth").onclick=()=>{month.setMonth(month.getMonth()-1);renderCalendar()};$("#nextMonth").onclick=()=>{month.setMonth(month.getMonth()+1);renderCalendar()};
+
+function renderReminders(){const now=new Date(),items=allTasks().filter(t=>t.deadline&&!t.done&&new Date(`${t.date}T${t.deadline}:00`)>=new Date(now.getTime()-60*60*1000)).sort((a,b)=>`${a.date}T${a.deadline}`.localeCompare(`${b.date}T${b.deadline}`)).slice(0,6),box=$("#reminderList");box.innerHTML="";if(!items.length){box.innerHTML='<div class="empty">No upcoming deadlines. Add a task with a time to set a reminder.</div>';return}items.forEach(t=>{const row=document.createElement("div");row.className="reminder-row";row.innerHTML=`<span class="reminder-time">${t.date===todayKey?"Today":new Date(`${t.date}T00:00:00`).toLocaleDateString("en",{month:"short",day:"numeric"})} · ${esc(t.deadline)}</span><span>${esc(t.title)}</span>`;box.append(row)})}
+function checkReminders(){if(!user)return;const now=new Date();allTasks().forEach(t=>{if(!t.deadline||t.done)return;const when=new Date(`${t.date}T${t.deadline}:00`),delta=when-now;if(delta>=0&&delta<60000&&!notified.has(t.id)){notified.add(t.id);toast(`Deadline now: ${t.title}`);if("Notification" in window&&Notification.permission==="granted")new Notification("Daymark reminder",{body:t.title})}})}
+$("#notifyButton").onclick=async()=>{if(!("Notification" in window)){toast("Browser notifications are not available here");return}const permission=await Notification.requestPermission();toast(permission==="granted"?"Browser reminders enabled":"Browser notification permission not granted")};
+
+function calculateStreak(){const dates=new Set(allTasks().filter(t=>t.done).map(t=>t.completedAt||t.date));let d=new Date(today);if(!dates.has(keyOf(d)))d.setDate(d.getDate()-1);let count=0;while(dates.has(keyOf(d))){count++;d.setDate(d.getDate()-1)}return count}
+function renderHistory(){const tasks=allTasks(),completed=tasks.filter(t=>t.done),rate=tasks.length?Math.round(completed.length/tasks.length*100):0,focus=Object.values(data().focus).reduce((sum,n)=>sum+n,0);$("#historyDone").textContent=completed.length;$("#historyRate").textContent=`${rate}%`;$("#historyFocus").textContent=`${focus} min`;$("#historyPoints").textContent=data().points;const chartDates=Array.from({length:14},(_,i)=>{const d=new Date(today);d.setDate(today.getDate()-(13-i));return d}),counts=chartDates.map(d=>completed.filter(t=>(t.completedAt||t.date)===keyOf(d)).length),max=Math.max(2,...counts);$("#historyChart").innerHTML=chartDates.map((d,i)=>`<div class="history-bar-wrap"><small>${counts[i]||""}</small><div class="history-bar" title="${counts[i]} completed" style="height:${Math.max(4,counts[i]/max*78)}%"></div><small>${d.getDate()}</small></div>`).join("");const list=$("#historyList");list.innerHTML="";completed.sort((a,b)=>(b.completedAt||b.date).localeCompare(a.completedAt||a.date)).slice(0,30).forEach(t=>{const row=document.createElement("div");row.className="task-row done";row.innerHTML=`<span class="tag">+${t.pointsAwarded?10:0} pts</span><span class="task-name">${esc(t.title)}</span><span class="task-meta">${new Date(`${t.completedAt||t.date}T00:00:00`).toLocaleDateString("en",{month:"short",day:"numeric"})}</span>`;list.append(row)});if(!completed.length)list.innerHTML='<div class="empty">Finished tasks will show here as you make progress.</div>'}
+
+function renderAll(){renderToday();renderWeek();renderCalendar();renderHistory();renderReminders()}
+function applyTheme(){const theme=data().settings.theme||"light";document.body.classList.remove("theme-dark","theme-lavender","theme-ocean","theme-warm");if(theme!=="light")document.body.classList.add(`theme-${theme}`)}
+$("#themeSelect").onchange=e=>{data().settings.theme=e.target.value;applyTheme();persist()};$("#displayName").onchange=e=>{const name=e.target.value.trim()||user.username;data().settings.name=name;$("#accountName").textContent=name;$("#avatar").textContent=name[0].toUpperCase();const h=new Date().getHours();$("#welcomeHeading").innerHTML=`${h<12?"Good morning":h<18?"Good afternoon":"Good evening"}, ${esc(name)}<span class="accent">.</span>`;persist()};
+
+function applyTimerSettings(){const work=Number($("#workMinutes").value),rest=Number($("#breakMinutes").value);if(!Number.isInteger(work)||work<1||work>180||!Number.isInteger(rest)||rest<1||rest>60){toast("Choose work 1–180 min and break 1–60 min");return}workMinutes=work;breakMinutes=rest;data().settings.work=work;data().settings.rest=rest;timerMode="work";$$('.mode').forEach(b=>b.classList.toggle("active",b.dataset.mode==="work"));resetTimer();persist();toast("Timer lengths updated")}
+$("#applyTimerSettings").onclick=applyTimerSettings;function resetTimer(){clearInterval(timer);timer=null;timerSeconds=(timerMode==="work"?workMinutes:breakMinutes)*60;$("#timerStart").textContent="Start";$("#timerStatus").textContent="Ready when you are";showTimer()}
+function showTimer(){$("#timerDisplay").textContent=`${String(Math.floor(timerSeconds/60)).padStart(2,"0")}:${String(timerSeconds%60).padStart(2,"0")}`}
+$$('.mode').forEach(b=>b.onclick=()=>{timerMode=b.dataset.mode;$$('.mode').forEach(x=>x.classList.toggle("active",x===b));resetTimer()});$("#timerReset").onclick=resetTimer;$("#timerStart").onclick=()=>{if(timer){clearInterval(timer);timer=null;$("#timerStart").textContent="Resume";$("#timerStatus").textContent="Paused";return}$("#timerStart").textContent="Pause";$("#timerStatus").textContent=timerMode==="work"?"You’re in a focus session":"Take a little breather";timer=setInterval(()=>{timerSeconds--;showTimer();if(timerSeconds<=0){clearInterval(timer);timer=null;if(timerMode==="work"){data().focus[todayKey]=(data().focus[todayKey]||0)+workMinutes;persist();renderAll()}$("#timerStatus").textContent=timerMode==="work"?"Session complete. Take a break.":"Break complete. Ready to focus?";$("#timerStart").textContent="Start again";toast(timerMode==="work"?"Focus session complete!":"Break complete!")}},1000)};
+
+function search(query){const box=$("#searchResults"),q=query.trim().toLowerCase();if(!q){box.classList.add("hidden");return}const matches=allTasks().filter(t=>t.title.toLowerCase().includes(q)).slice(0,12);const nav=$$(".nav-link").filter(b=>b.textContent.toLowerCase().includes(q));box.innerHTML="";matches.forEach(t=>{const b=document.createElement("button");b.className="search-hit";b.textContent=`${t.title} · ${t.date}${t.done?" · completed":""}`;b.onclick=()=>{selectedDate=t.date;month=new Date(`${t.date}T00:00:00`);goto("calendar");box.classList.add("hidden");$("#globalSearch").value=""};box.append(b)});nav.forEach(n=>{const b=document.createElement("button");b.className="search-hit";b.textContent=`Open ${n.textContent.trim()}`;b.onclick=()=>{goto(n.dataset.page);box.classList.add("hidden")};box.append(b)});if(!matches.length&&!nav.length)box.innerHTML='<div class="empty">No tasks or sections found.</div>';box.classList.remove("hidden")}
+$("#globalSearch").oninput=e=>search(e.target.value);$("#globalSearch").onkeydown=e=>{if(e.key==="Escape"){$("#searchResults").classList.add("hidden");e.target.value=""}if(e.key==="Enter"){const first=$("#searchResults .search-hit");if(first)first.click()}};document.addEventListener("click",e=>{if(!e.target.closest(".search-box")&&!e.target.closest(".search-results"))$("#searchResults").classList.add("hidden")});
+
+const storedSession=localStorage.getItem(SESSION_KEY);if(storedSession&&accounts[storedSession])openApp(storedSession);else setAuthMode("login");setInterval(checkReminders,30000);setInterval(()=>{if(user)renderReminders()},60000);
