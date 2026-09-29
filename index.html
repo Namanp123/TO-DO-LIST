@@ -1,15 +1,866 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <title>TO-DO-LIST</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <title>Daymark — Personal Planner</title>
+
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
 </head>
+
 <body>
-    <h1>HOMEPAGE</h1>
-    <h4>WELCOME NAMAN</h4>
-    
+
+  <!-- ==================== AUTH SCREEN ==================== -->
+
+  <section id="authScreen" class="auth-screen">
+
+    <div class="auth-card">
+
+      <a class="brand" href="#">
+        <span class="brand-mark">✳</span>
+        daymark
+      </a>
+
+      <p class="eyebrow">YOUR PERSONAL SPACE</p>
+
+      <h1 id="authTitle">Welcome back.</h1>
+
+      <p class="muted" id="authSubtitle">
+        Sign in to continue with your day.
+      </p>
+
+      <form id="authForm">
+
+        <label for="authUsername">Username</label>
+
+        <input
+          id="authUsername"
+          autocomplete="username"
+          required
+          minlength="3"
+          placeholder="Choose a username"
+        >
+
+        <label for="authPassword">Password</label>
+
+        <input
+          id="authPassword"
+          type="password"
+          autocomplete="current-password"
+          required
+          minlength="4"
+          placeholder="Enter your password"
+        >
+
+        <button
+          class="button primary full"
+          id="authSubmit"
+          type="submit"
+        >
+          Sign in
+        </button>
+
+        <p
+          class="form-error"
+          id="authError"
+          aria-live="polite"
+        ></p>
+
+      </form>
+
+      <p class="auth-switch">
+
+        <span id="authSwitchText">
+          New to Daymark?
+        </span>
+
+        <button
+          class="text-button"
+          id="authSwitch"
+          type="button"
+        >
+          Create an account
+        </button>
+
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <!-- ==================== MAIN APP ==================== -->
+
+  <div id="app" class="app hidden">
+
+    <!-- ==================== SIDEBAR ==================== -->
+
+    <aside class="sidebar">
+
+      <a class="brand" href="#">
+        <span class="brand-mark">✳</span>
+        Daymark
+      </a>
+
+      <p class="nav-heading">
+        WORKSPACE
+      </p>
+
+      <nav
+        class="navigation"
+        aria-label="Main navigation"
+      >
+
+        <button
+          class="nav-link active"
+          data-page="home"
+        >
+          <span>⌂</span>
+          Home
+        </button>
+
+        <button
+          class="nav-link"
+          data-page="calendar"
+        >
+          <span>▦</span>
+          Calendar
+        </button>
+
+        <button
+          class="nav-link"
+          data-page="focus"
+        >
+          <span>◷</span>
+          Focus timer
+        </button>
+
+        <button
+          class="nav-link"
+          data-page="settings"
+        >
+          <span>⚙</span>
+          Settings
+        </button>
+
+      </nav>
+
+
+      <div class="sidebar-bottom">
+
+        <div class="sidebar-note">
+
+          <strong>
+            A little progress adds up.
+          </strong>
+
+          <p>
+            Choose one small thing and give it your attention.
+          </p>
+
+          <button
+            class="button primary full"
+            data-goto="focus"
+          >
+            Start a focus session
+          </button>
+
+        </div>
+
+
+        <div class="account-row">
+
+          <div
+            class="avatar"
+            id="avatar"
+          >
+            D
+          </div>
+
+          <div class="account-info">
+
+            <strong id="accountName">
+              User
+            </strong>
+
+            <small>
+              Personal planner
+            </small>
+
+          </div>
+
+          <button
+            class="icon-button"
+            id="logoutButton"
+            title="Log out"
+            aria-label="Log out"
+          >
+            ↪
+          </button>
+
+        </div>
+
+      </div>
+
+    </aside>
+
+
+    <!-- ==================== MAIN ==================== -->
+
+    <main class="main">
+
+      <header class="topbar">
+
+        <span
+          class="breadcrumb"
+          id="breadcrumb"
+        >
+          Workspace / Home
+        </span>
+
+        <span
+          class="date-pill"
+          id="datePill"
+        ></span>
+
+      </header>
+
+
+      <div class="content">
+
+
+        <!-- ==================== HOME ==================== -->
+
+        <section
+          class="page active"
+          id="page-home"
+        >
+
+          <div class="page-heading">
+
+            <div>
+
+              <p
+                class="eyebrow"
+                id="todayHeading"
+              ></p>
+
+              <h1>
+                Welcome Naman P<span class="accent">.</span>
+              </h1>
+
+              <p class="muted">
+                One thing at a time. You’re doing better than you think.
+              </p>
+
+            </div>
+
+            <button
+              class="button primary"
+              id="addTaskButton"
+            >
+              ＋ Add a task
+            </button>
+
+          </div>
+
+
+          <!-- STATS -->
+
+          <div class="stats">
+
+            <article class="card stat">
+
+              <span>
+                Tasks completed
+              </span>
+
+              <strong id="taskCount">
+                0 / 0
+              </strong>
+
+              <small id="taskPercent">
+                For today
+              </small>
+
+            </article>
+
+
+            <article class="card stat">
+
+              <span>
+                Focus time
+              </span>
+
+              <strong id="focusCount">
+                0 min
+              </strong>
+
+              <small>
+                Time well spent
+              </small>
+
+            </article>
+
+
+            <article class="card stat">
+
+              <span>
+                Habits done
+              </span>
+
+              <strong id="habitCount">
+                0 / 3
+              </strong>
+
+              <small>
+                Small actions add up
+              </small>
+
+            </article>
+
+
+            <article class="card stat">
+
+              <span>
+                Current streak
+              </span>
+
+              <strong id="streakCount">
+                0 days
+              </strong>
+
+              <small>
+                Keep your rhythm going
+              </small>
+
+            </article>
+
+          </div>
+
+
+          <!-- DASHBOARD -->
+
+          <div class="dashboard-grid">
+
+            <article class="card panel">
+
+              <div class="panel-heading">
+
+                <h2>
+                  Your week
+                </h2>
+
+                <span>
+                  Plan your pace
+                </span>
+
+              </div>
+
+
+              <div
+                class="week-strip"
+                id="weekStrip"
+              ></div>
+
+
+              <div class="progress-label">
+
+                <span>
+                  Today’s progress
+                </span>
+
+                <strong id="progressText">
+                  0%
+                </strong>
+
+              </div>
+
+
+              <div class="progress-track">
+
+                <div
+                  class="progress-fill"
+                  id="progressFill"
+                ></div>
+
+              </div>
+
+
+              <div class="panel-heading task-heading">
+
+                <h2>
+                  Today’s tasks
+                </h2>
+
+                <button
+                  class="text-button"
+                  id="clearDoneButton"
+                >
+                  Clear completed
+                </button>
+
+              </div>
+
+
+              <div
+                id="taskList"
+                class="task-list"
+              ></div>
+
+            </article>
+
+
+            <!-- RIGHT COLUMN -->
+
+            <div class="right-column">
+
+              <article class="card panel">
+
+                <div class="panel-heading">
+
+                  <h2>
+                    Weekly overview
+                  </h2>
+
+                  <span>
+                    Tasks done
+                  </span>
+
+                </div>
+
+                <div
+                  class="chart"
+                  id="weeklyChart"
+                ></div>
+
+              </article>
+
+
+              <article class="card panel">
+
+                <div class="panel-heading">
+
+                  <h2>
+                    Daily habits
+                  </h2>
+
+                  <span>
+                    ☘
+                  </span>
+
+                </div>
+
+                <div
+                  id="habitList"
+                  class="task-list"
+                ></div>
+
+              </article>
+
+
+              <div class="reminder">
+
+                <strong>
+                  A gentle reminder
+                </strong>
+
+                <br>
+
+                You don’t have to do it all today.
+                Keep showing up for what matters.
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- ==================== CALENDAR ==================== -->
+
+        <section
+          class="page"
+          id="page-calendar"
+        >
+
+          <div class="page-heading">
+
+            <div>
+
+              <p class="eyebrow">
+                MAKE ROOM FOR WHAT MATTERS
+              </p>
+
+              <h1>
+                Your calendar<span class="accent">.</span>
+              </h1>
+
+              <p class="muted">
+                Plan the week, one day at a time.
+              </p>
+
+            </div>
+
+            <button
+              class="button primary"
+              id="calendarAddButton"
+            >
+              ＋ Add a task
+            </button>
+
+          </div>
+
+
+          <article class="card panel">
+
+            <div class="panel-heading">
+
+              <h2 id="monthTitle"></h2>
+
+              <div class="button-row">
+
+                <button
+                  class="button secondary"
+                  id="prevMonth"
+                >
+                  ←
+                </button>
+
+                <button
+                  class="button secondary"
+                  id="nextMonth"
+                >
+                  →
+                </button>
+
+              </div>
+
+            </div>
+
+
+            <div
+              class="calendar-grid"
+              id="calendarGrid"
+            ></div>
+
+          </article>
+
+
+          <article class="card panel calendar-agenda">
+
+            <div class="panel-heading">
+
+              <h2 id="selectedDateTitle">
+                Coming up
+              </h2>
+
+              <span>
+                Selected day
+              </span>
+
+            </div>
+
+            <div id="calendarAgenda"></div>
+
+          </article>
+
+        </section>
+
+
+        <!-- ==================== FOCUS TIMER ==================== -->
+
+        <section
+          class="page"
+          id="page-focus"
+        >
+
+          <div class="page-heading">
+
+            <div>
+
+              <p class="eyebrow">
+                A QUIET MOMENT FOR YOUR WORK
+              </p>
+
+              <h1>
+                Find your focus<span class="accent">.</span>
+              </h1>
+
+              <p class="muted">
+                Choose one thing. Give it your attention.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <article class="card timer-card">
+
+            <div class="timer-modes">
+
+              <button
+                class="mode active"
+                data-minutes="25"
+              >
+                Focus · 25 min
+              </button>
+
+              <button
+                class="mode"
+                data-minutes="5"
+              >
+                Short break · 5 min
+              </button>
+
+              <button
+                class="mode"
+                data-minutes="15"
+              >
+                Long break · 15 min
+              </button>
+
+            </div>
+
+
+            <div
+              class="timer-display"
+              id="timerDisplay"
+            >
+              25:00
+            </div>
+
+
+            <p
+              class="muted"
+              id="timerStatus"
+            >
+              Ready when you are
+            </p>
+
+
+            <div class="button-row center">
+
+              <button
+                class="button primary"
+                id="timerStart"
+              >
+                Start focus
+              </button>
+
+              <button
+                class="button secondary"
+                id="timerReset"
+              >
+                Reset
+              </button>
+
+            </div>
+
+
+            <p class="timer-tip">
+              A small pause can help you return with fresh energy.
+            </p>
+
+          </article>
+
+        </section>
+
+
+        <!-- ==================== SETTINGS ==================== -->
+
+        <section
+          class="page"
+          id="page-settings"
+        >
+
+          <div class="page-heading">
+
+            <div>
+
+              <p class="eyebrow">
+                MAKE IT FEEL LIKE YOURS
+              </p>
+
+              <h1>
+                Settings<span class="accent">.</span>
+              </h1>
+
+              <p class="muted">
+                Shape your workspace to suit you.
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <article class="card panel settings-panel">
+
+
+            <div class="setting-row">
+
+              <div>
+
+                <strong>
+                  Accent color
+                </strong>
+
+                <small>
+                  Choose a color for buttons and highlights.
+                </small>
+
+              </div>
+
+
+              <div class="swatches">
+
+                <button
+                  class="swatch"
+                  aria-label="Sage"
+                  data-color="#698b61"
+                  data-dark="#46643f"
+                  data-tint="#e9f0e5"
+                  style="background:#698b61"
+                ></button>
+
+                <button
+                  class="swatch"
+                  aria-label="Lavender"
+                  data-color="#8872b5"
+                  data-dark="#604c8b"
+                  data-tint="#eeeaf6"
+                  style="background:#8872b5"
+                ></button>
+
+                <button
+                  class="swatch"
+                  aria-label="Ocean"
+                  data-color="#4f8791"
+                  data-dark="#35616a"
+                  data-tint="#e5f0f1"
+                  style="background:#4f8791"
+                ></button>
+
+                <button
+                  class="swatch"
+                  aria-label="Terracotta"
+                  data-color="#bf795d"
+                  data-dark="#92553d"
+                  data-tint="#f7ece6"
+                  style="background:#bf795d"
+                ></button>
+
+              </div>
+
+            </div>
+
+
+            <div class="setting-row">
+
+              <div>
+
+                <strong>
+                  Focus session length
+                </strong>
+
+                <small>
+                  Choose the length of a focus session.
+                </small>
+
+              </div>
+
+              <select id="focusLength">
+
+                <option value="25">
+                  25 minutes
+                </option>
+
+                <option value="30">
+                  30 minutes
+                </option>
+
+                <option value="45">
+                  45 minutes
+                </option>
+
+                <option value="50">
+                  50 minutes
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div class="setting-row">
+
+              <div>
+
+                <strong>
+                  Display name
+                </strong>
+
+                <small>
+                  Shown in your workspace.
+                </small>
+
+              </div>
+
+              <input
+                id="displayName"
+                maxlength="25"
+                aria-label="Display name"
+              >
+
+            </div>
+
+
+            <div class="setting-row">
+
+              <div>
+
+                <strong>
+                  Account
+                </strong>
+
+                <small id="settingsUsername"></small>
+
+              </div>
+
+              <button
+                class="button secondary"
+                id="settingsLogout"
+              >
+                Log out
+              </button>
+
+            </div>
+
+          </article>
+
+        </section>
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <!-- TOAST -->
+
+  <div
+    class="toast"
+    id="toast"
+    role="status"
+    aria-live="polite"
+  ></div>
+
 </body>
 </html>
